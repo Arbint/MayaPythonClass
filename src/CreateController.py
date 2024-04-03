@@ -23,13 +23,20 @@ class Vector:
         return Vector(self.x/scalar, self.y/scalar, self.z/scalar)
     
     def GetLength(self):
-        return (self.x ** 2, self.y ** 2, self.z ** 2) ** 0.5
+        return (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
     
     def GetNormalized(self):
         return self/self.GetLength()
     
     def __str__(self):
         return f"<{self.x},{self.y},{self.z}>"
+
+def GetObjPos(obj):
+    pos = mc.xform(obj, t=True, q=True, ws=True)
+    return Vector(pos[0], pos[1], pos[2])
+
+def SetObjPos(obj, pos: Vector):
+    mc.setAttr(obj + ".translate", pos.x, pos.y, pos.z, type = "float3")
 
 def CreateControllerForJnt(jnt, size = 10):
     ctrlName = "ac_" + jnt
@@ -83,6 +90,16 @@ class ThreeJntChain:
         ikMidCtrl = "ac_ik_" + self.middle
         mc.spaceLocator(n=ikMidCtrl)
 
+        rootJntPos = GetObjPos(self.root)
+        endJntPos = GetObjPos(self.end)
+        poleVec = mc.getAttr(ikHandleName + ".poleVector")[0]
+        poleVec = Vector(poleVec[0], poleVec[1], poleVec[2])
+
+        armVec = endJntPos - rootJntPos
+        halfArmLengh = armVec.GetLength()/2
+
+        poleVecPos = rootJntPos + poleVec * halfArmLengh + armVec/2
+        SetObjPos(ikMidCtrl, poleVecPos)     
 
 
 ####################################
