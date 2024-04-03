@@ -4,6 +4,33 @@ from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEd
 ####################################
 #            Facilities            #
 ####################################
+class Vector:
+    def __init__(self, *args):
+        self.x = args[0]
+        self.y = args[1]
+        self.z = args[2]
+
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
+    
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
+    
+    def __mult__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
+    
+    def __truediv__(self, scalar):
+        return Vector(self.x/scalar, self.y/scalar, self.z/scalar)
+    
+    def GetLength(self):
+        return (self.x ** 2, self.y ** 2, self.z ** 2) ** 0.5
+    
+    def GetNormalized(self):
+        return self/self.GetLength()
+    
+    def __str__(self):
+        return f"<{self.x},{self.y},{self.z}>"
+
 def CreateControllerForJnt(jnt, size = 10):
     ctrlName = "ac_" + jnt
     ctrlGrpName = ctrlName + "_grp"
@@ -50,7 +77,11 @@ class ThreeJntChain:
         mc.matchTransform(ikEndCtrlGrp, self.end)
         mc.orientConstraint(ikEndCtrl, self.end)
 
-        
+        ikHandleName = "ikHanle_" + self.end
+        mc.ikHandle(n=ikHandleName, sj = self.root, ee=self.end, sol = "ikRPsolver") 
+
+        ikMidCtrl = "ac_ik_" + self.middle
+        mc.spaceLocator(n=ikMidCtrl)
 
 
 
