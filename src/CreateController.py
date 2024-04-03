@@ -50,6 +50,8 @@ class ThreeJntChain:
         mc.matchTransform(ikEndCtrlGrp, self.end)
         mc.orientConstraint(ikEndCtrl, self.end)
 
+        
+
 
 
 ####################################
