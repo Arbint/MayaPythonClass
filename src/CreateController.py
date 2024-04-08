@@ -71,6 +71,7 @@ class ThreeJntChain:
         self.root = ""
         self.middle = ""
         self.end = ""
+        self.controllerSize = 5
 
     def AutoFindJntsBasedOnSel(self):
         self.root = mc.ls(sl=True, type = "joint")[0]
@@ -78,15 +79,15 @@ class ThreeJntChain:
         self.end = mc.listRelatives(self.middle, c=True, type ="joint")[0]
 
     def RigThreeJntChain(self):
-        rootCtrl, rootCtrlGrp = CreateControllerForJnt(self.root)
-        middleCtrl, middleCtrlGrp = CreateControllerForJnt(self.middle)
-        endCtrl, endCtrlGrp = CreateControllerForJnt(self.end)
+        rootCtrl, rootCtrlGrp = CreateControllerForJnt(self.root, self.controllerSize)
+        middleCtrl, middleCtrlGrp = CreateControllerForJnt(self.middle, self.controllerSize)
+        endCtrl, endCtrlGrp = CreateControllerForJnt(self.end, self.controllerSize)
 
         mc.parent(middleCtrlGrp, rootCtrl)
         mc.parent(endCtrlGrp, middleCtrl)
 
         ikEndCtrl = "ac_ik_" + self.end
-        CreateBox(ikEndCtrl)
+        CreateBox(ikEndCtrl, self.controllerSize)
         ikEndCtrlGrp = ikEndCtrl + "_grp"
         mc.group(ikEndCtrl, n = ikEndCtrlGrp)
         mc.matchTransform(ikEndCtrlGrp, self.end)
@@ -97,7 +98,7 @@ class ThreeJntChain:
 
         ikMidCtrl = "ac_ik_" + self.middle
         mc.spaceLocator(n=ikMidCtrl)
-
+    
         rootJntPos = GetObjPos(self.root)
         endJntPos = GetObjPos(self.end)
         poleVec = mc.getAttr(ikHandleName + ".poleVector")[0]
@@ -109,6 +110,7 @@ class ThreeJntChain:
         poleVecPos = rootJntPos + poleVec * halfArmLengh + armVec/2
         ikMidCtrlGrp = ikMidCtrl + "_grp"
         mc.group(ikMidCtrl, n = ikMidCtrlGrp)
+        mc.setAttr(ikMidCtrl+".scale", self.controllerSize, self.controllerSize, self.controllerSize, type = "float3")
         SetObjPos(ikMidCtrlGrp, poleVecPos)     
 
         mc.poleVectorConstraint(ikMidCtrl, ikHandleName)
@@ -154,7 +156,7 @@ class ThreeJntChain:
 ####################################
 
 from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout
-from PySide2.QtGui import QDoubleValidator
+from PySide2.QtGui import QDoubleValidator, QColorPicker
 
 class ThreeJntChainWiget(QWidget):
     def __init__(self):
@@ -181,6 +183,7 @@ class ThreeJntChainWiget(QWidget):
         self.ctrlSize = QLineEdit()
         self.ctrlSize.setValidator(QDoubleValidator())
         self.ctrlSize.setText("10")
+        self.ctrlSize.textChanged.connect(self.CtrlSizeValueSet)
         ctrlSettingLayout.addWidget(self.ctrlSize)
 
         self.masterLayout.addLayout(ctrlSettingLayout)
@@ -193,9 +196,12 @@ class ThreeJntChainWiget(QWidget):
         self.adjustSize()
         self.threeJntChain = ThreeJntChain()
 
+    def CtrlSizeValueSet(self, valStr:str):
+        size = float(valStr)
+        self.threeJntChain.controllerSize = size
+
     def RigThreeJntChainBtnClicked(self):
         self.threeJntChain.RigThreeJntChain()
-
 
     def AutoFindBtnClicked(self):
         print("button pressed")
