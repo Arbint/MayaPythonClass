@@ -1,5 +1,4 @@
 import maya.cmds as mc
-from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEdit
 
 ####################################
 #            Facilities            #
@@ -143,12 +142,20 @@ class ThreeJntChain:
         mc.connectAttr(ikfkBlendCtrl + "." +ikfkBlendAttr, endOrientConstraint + ".w1")
 
         #group everything together and name it properly
-
+        topGrpName = self.root + "_rig_grp"
+        mc.group(rootCtrlGrp, ikEndCtrlGrp, ikMidCtrlGrp, ikfkBlendCtrlGrp, n = topGrpName)
         #hide useless stuff - ikHandle.
+        mc.hide(ikHandleName)
+
+
 
 ####################################
 #                UI                #
 ####################################
+
+from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout
+from PySide2.QtGui import QDoubleValidator
+
 class ThreeJntChainWiget(QWidget):
     def __init__(self):
         super().__init__()
@@ -167,9 +174,21 @@ class ThreeJntChainWiget(QWidget):
         self.selectionDisplay = QLabel()
         self.masterLayout.addWidget(self.selectionDisplay)
 
+        ctrlSettingLayout = QHBoxLayout()
+        ctrlSizeLabel = QLabel("Controller Size: ")
+        ctrlSettingLayout.addWidget(ctrlSizeLabel)
+
+        self.ctrlSize = QLineEdit()
+        self.ctrlSize.setValidator(QDoubleValidator())
+        self.ctrlSize.setText("10")
+        ctrlSettingLayout.addWidget(self.ctrlSize)
+
+        self.masterLayout.addLayout(ctrlSettingLayout)
+
         rigThreeJntChainBtn = QPushButton("Rig Three Jnt Chain")
         self.masterLayout.addWidget(rigThreeJntChainBtn)
         rigThreeJntChainBtn.clicked.connect(self.RigThreeJntChainBtnClicked)
+
 
         self.adjustSize()
         self.threeJntChain = ThreeJntChain()
