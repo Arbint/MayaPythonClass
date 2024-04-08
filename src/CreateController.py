@@ -127,11 +127,24 @@ class ThreeJntChain:
         ikfkBlendPos = rootJntPos + Vector(dir * halfArmLengh/4, halfArmLengh/4, 0)
         SetObjPos(ikfkBlendCtrlGrp, ikfkBlendPos)
 
+        ikfkBlendAttr = "ikfkBlend"
+        mc.addAttr(ikfkBlendCtrl, ln = ikfkBlendAttr, k=True, at = "float", min = 0, max = 1)
+        mc.connectAttr(ikfkBlendCtrl + "." + ikfkBlendAttr, ikHandleName + ".ikBlend")
+
+        ikfkReverse = "reverse_" + self.root + "_ikfkblend"
+        mc.createNode("reverse", n = ikfkReverse)
+
+        mc.connectAttr(ikfkBlendCtrl+"."+ikfkBlendAttr, ikfkReverse+".inputX")
+        mc.connectAttr(ikfkBlendCtrl+"."+ikfkBlendAttr, ikEndCtrlGrp + ".v")
+        mc.connectAttr(ikfkBlendCtrl+"."+ikfkBlendAttr, ikMidCtrlGrp + ".v")
+        mc.connectAttr(ikfkReverse+ ".outputX", rootCtrlGrp +".v")
+
+        
 
 ####################################
 #                UI                #
 ####################################
-class ThreeJntChainWiget(QWidget):  
+class ThreeJntChainWiget(QWidget):
     def __init__(self):
         super().__init__()
 
