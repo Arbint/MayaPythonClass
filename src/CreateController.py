@@ -131,7 +131,7 @@ class ThreeJntChain:
 ####################################
 #                UI                #
 ####################################
-class ThreeJntChainWiget(QWidget):
+class ThreeJntChainWiget(QWidget):  
     def __init__(self):
         super().__init__()
 
