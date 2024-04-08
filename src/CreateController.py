@@ -60,6 +60,13 @@ def CreateBox(name, size = 10):
     mc.setAttr(name + ".scale", size,size,size, type = "float3")
     mc.makeIdentity(name, apply = True)
 
+def CreatePlus(name, size = 10):
+    p = ((0.5,0,1),(0.5,0,0.5),(1,0,0.5),(1,0,-0.5),(0.5, 0,-0.5), (0.5, 0, -1),(-0.5, 0, -1),(-0.5,0,-0.5),(-1, 0, -0.5),(-1,0,0.5),(-0.5,0,0.5),(-0.5,0,1),(0.5,0,1))
+    mc.curve(n=name, d=1, p = p)
+    mc.setAttr(name + ".rx", 90)
+    mc.setAttr(name + ".scale", size,size,size, type = "float3")
+    mc.makeIdentity(name, apply = True)
+
 class ThreeJntChain:
     def __init__(self):
         self.root = ""
@@ -108,6 +115,18 @@ class ThreeJntChain:
         mc.poleVectorConstraint(ikMidCtrl, ikHandleName)
         mc.parent(ikHandleName, ikEndCtrl)
         
+        ikfkBlendCtrl = "ac_" + self.root + "_ikfk_blend"
+        CreatePlus(ikfkBlendCtrl, 2)
+        ikfkBlendCtrlGrp = ikfkBlendCtrl + "_grp"
+        mc.group(ikfkBlendCtrl, n = ikfkBlendCtrlGrp)
+
+        dir = 1
+        if rootJntPos.x < 0:
+            dir = -1
+            
+        ikfkBlendPos = rootJntPos + Vector(dir * halfArmLengh/4, halfArmLengh/4, 0)
+        SetObjPos(ikfkBlendCtrlGrp, ikfkBlendPos)
+
 
 ####################################
 #                UI                #
