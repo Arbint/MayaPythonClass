@@ -91,8 +91,8 @@ class ThreeJntChain:
         ikEndCtrlGrp = ikEndCtrl + "_grp"
         mc.group(ikEndCtrl, n = ikEndCtrlGrp)
         mc.matchTransform(ikEndCtrlGrp, self.end)
-        mc.orientConstraint(ikEndCtrl, self.end)
-
+        endOrientConstraint = mc.orientConstraint(ikEndCtrl, self.end)[0]
+        
         ikHandleName = "ikHanle_" + self.end
         mc.ikHandle(n=ikHandleName, sj = self.root, ee=self.end, sol = "ikRPsolver") 
 
@@ -139,7 +139,12 @@ class ThreeJntChain:
         mc.connectAttr(ikfkBlendCtrl+"."+ikfkBlendAttr, ikMidCtrlGrp + ".v")
         mc.connectAttr(ikfkReverse+ ".outputX", rootCtrlGrp +".v")
 
-        
+        mc.connectAttr(ikfkReverse + ".outputX", endOrientConstraint + ".w0")
+        mc.connectAttr(ikfkBlendCtrl + "." +ikfkBlendAttr, endOrientConstraint + ".w1")
+
+        #group everything together and name it properly
+
+        #hide useless stuff - ikHandle.
 
 ####################################
 #                UI                #
