@@ -13,10 +13,12 @@ class Vector:
     def __add__(self, other):
         return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
     
+    # operator - overload
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
     
-    def __mult__(self, scalar):
+    # operator * overload  
+    def __mul__(self, scalar):
         return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
     
     def __truediv__(self, scalar):
