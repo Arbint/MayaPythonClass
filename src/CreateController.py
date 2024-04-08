@@ -101,8 +101,13 @@ class ThreeJntChain:
         halfArmLengh = armVec.GetLength()/2
 
         poleVecPos = rootJntPos + poleVec * halfArmLengh + armVec/2
-        SetObjPos(ikMidCtrl, poleVecPos)     
+        ikMidCtrlGrp = ikMidCtrl + "_grp"
+        mc.group(ikMidCtrl, n = ikMidCtrlGrp)
+        SetObjPos(ikMidCtrlGrp, poleVecPos)     
 
+        mc.poleVectorConstraint(ikMidCtrl, ikHandleName)
+        mc.parent(ikHandleName, ikEndCtrl)
+        
 
 ####################################
 #                UI                #
