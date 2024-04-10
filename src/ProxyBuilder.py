@@ -44,6 +44,24 @@ def GetAllConnectionIn(obj, NextFunc, Filter = None):
 
     return filted
 
+def GetJntWithMostInfluence(vert, skin):
+    weights = mc.skinPercent(skin, vert, q=True, v=True)
+    jnts = mc.skinPercent(skin, vert, q=True, t=None)
+    
+    maxWeightIndex = 0
+    maxWeight = weights[0]
+
+    for i in range(1, len(weights)):
+        if weights[i] > maxWeight:
+            maxWeight = weights[i]
+            maxWeightIndex = i
+    
+    return jnts[maxWeightIndex]
+
+
+
+
+
 class BuildProxy:
     def __init__(self):
         self.skin = ""
@@ -66,8 +84,21 @@ class BuildProxy:
         if jnts:
             self.jnts = jnts
 
-        print(f"find mesh: {self.model}, skin: {self.skin}, jnts: {self.jnts}")
-        mc.select(self.jnts, r=True)
+        jntVertsMap = self.GenerateJntVertsDict()
+
+        print(jntVertsMap)
+
+    def GenerateJntVertsDict(self):
+        dict = {}
+        for jnt in self.jnts:
+            dict[jnt] = []
+
+        verts = mc.ls(f"{self.model}.vtx[*]", flatten = True)
+        for vert in verts:
+            owningJnt = GetJntWithMostInfluence(vert, self.skin)
+            dict[owningJnt].append(vert)
+
+        return dict
 
 class BuildProxyWidget(QWidget):
     def __init__(self):
