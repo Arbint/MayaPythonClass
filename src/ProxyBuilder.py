@@ -89,6 +89,9 @@ class BuildProxy:
         segments = []
         for jnt, verts in jntVertsMap.items():
             newSeg = self.CreateProxyModelForJntAndVerts(jnt, verts)
+            newSkinCluster = mc.skinCluster(self.jnts, newSeg)[0]
+            print(newSkinCluster)
+            mc.copySkinWeights(ss=self.skin, ds=newSkinCluster, nm=True, sa="closestPoint", ia="closestJoint")
 
     def CreateProxyModelForJntAndVerts(self, jnt, verts):
         if not verts:
