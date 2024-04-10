@@ -34,8 +34,15 @@ def GetAllConnectionIn(obj, NextFunc, Filter = None):
         if nexts:
             nexts = [x for x in nexts if x not in AllFound]        
 
-    return AllFound
+    if not Filter:
+        return list(AllFound)
+    
+    filted = []
+    for found in AllFound:
+        if Filter(found):
+            filted.append(found)
 
+    return filted
 
 class BuildProxy:
     def __init__(self):
@@ -52,7 +59,15 @@ class BuildProxy:
         modelShape = mc.listRelatives(self.model, s=True)[0]
 
         skin = GetAllConnectionIn(modelShape, GetUpperStream, IsSkin)
-        print(skin)
+        if skin:
+            self.skin = skin[0]
+
+        jnts = GetAllConnectionIn(modelShape, GetUpperStream, IsJoint)
+        if jnts:
+            self.jnts = jnts
+
+        print(f"find mesh: {self.model}, skin: {self.skin}, jnts: {self.jnts}")
+        mc.select(self.jnts, r=True)
 
 class BuildProxyWidget(QWidget):
     def __init__(self):
