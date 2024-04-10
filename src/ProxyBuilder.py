@@ -85,8 +85,38 @@ class BuildProxy:
             self.jnts = jnts
 
         jntVertsMap = self.GenerateJntVertsDict()
+        
+        segments = []
+        for jnt, verts in jntVertsMap.items():
+            newSeg = self.CreateProxyModelForJntAndVerts(jnt, verts)
 
-        print(jntVertsMap)
+    def CreateProxyModelForJntAndVerts(self, jnt, verts):
+        if not verts:
+            return None
+
+        faces = mc.polyListComponentConversion(verts, fromVertex = True, toFace = True)
+        faces = mc.ls(faces, flatten = True)
+
+        Labels = set()
+        for face in faces:
+            Labels.add(face.replace(self.model, ""))
+
+        dup = mc.duplicate(self.model)[0]
+
+        allDupFaces = mc.ls(f"{dup}.f[*]", flatten = True)
+        facesToDel = []
+        for dupFace in allDupFaces:
+            label = dupFace.replace(dup, "")
+            if label not in Labels:
+                facesToDel.append(dupFace)
+
+        mc.delete(facesToDel)
+        dupName = self.model + "_" + jnt + "_proxy"
+        mc.rename(dup, dupName)
+        return dupName
+    
+
+
 
     def GenerateJntVertsDict(self):
         dict = {}
@@ -99,6 +129,7 @@ class BuildProxy:
             dict[owningJnt].append(vert)
 
         return dict
+    
 
 class BuildProxyWidget(QWidget):
     def __init__(self):
