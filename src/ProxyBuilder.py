@@ -23,6 +23,20 @@ def GetUpperStream(obj):
 def GetLowerStream(obj):
     return mc.listConnections(obj, s=False, d=True, sh=True)
 
+def GetAllConnectionIn(obj, NextFunc, Filter = None):
+    AllFound = set()
+    nexts = NextFunc(obj)
+    while nexts:
+        for next in nexts:
+            AllFound.add(next)
+
+        nexts = NextFunc(nexts)
+        if nexts:
+            nexts = [x for x in nexts if x not in AllFound]        
+
+    return AllFound
+
+
 class BuildProxy:
     def __init__(self):
         self.skin = ""
@@ -37,9 +51,8 @@ class BuildProxy:
         self.model = model
         modelShape = mc.listRelatives(self.model, s=True)[0]
 
-        upperStream = GetUpperStream(modelShape)
-        print(upperStream)
-
+        skin = GetAllConnectionIn(modelShape, GetUpperStream, IsSkin)
+        print(skin)
 
 class BuildProxyWidget(QWidget):
     def __init__(self):
