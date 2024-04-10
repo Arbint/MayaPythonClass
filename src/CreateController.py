@@ -155,8 +155,23 @@ class ThreeJntChain:
 #                UI                #
 ####################################
 
-from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout
-from PySide2.QtGui import QDoubleValidator, QColorPicker
+from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout, QColorDialog
+from PySide2.QtGui import QDoubleValidator, QColor, QPainter, QPalette
+
+class ColorPickerWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.color = QColor(0,0,0)
+        self.masterLayout = QVBoxLayout()
+        self.setLayout(self.masterLayout)
+        self.button = QPushButton()
+        self.setAutoFillBackground(True)
+        self.masterLayout.addWidget(self.button)
+        #self.setFixedSize(100,20)
+
+    def mousePressEvent(self, event):
+        color = QColorDialog().getColor()
+        #self.button.
 
 class ThreeJntChainWiget(QWidget):
     def __init__(self):
@@ -187,6 +202,9 @@ class ThreeJntChainWiget(QWidget):
         ctrlSettingLayout.addWidget(self.ctrlSize)
 
         self.masterLayout.addLayout(ctrlSettingLayout)
+
+        self.colorPicker = ColorPickerWidget()
+        self.masterLayout.addWidget(self.colorPicker)
 
         rigThreeJntChainBtn = QPushButton("Rig Three Jnt Chain")
         self.masterLayout.addWidget(rigThreeJntChainBtn)
