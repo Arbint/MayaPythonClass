@@ -58,10 +58,6 @@ def GetJntWithMostInfluence(vert, skin):
     
     return jnts[maxWeightIndex]
 
-
-
-
-
 class BuildProxy:
     def __init__(self):
         self.skin = ""
