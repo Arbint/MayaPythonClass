@@ -16,6 +16,31 @@ class Ghost():
     def GetGhostGrpName(self):
         return "Ghost_grp"
 
+    def GoToNextGhost(self):
+        currentFrame = GetCurrentFrame()
+        frames = self.GetGhostFramesSorted()
+        nextFrame = frames[0]
+        for frame in frames:
+            if frame > currentFrame:
+                nextFrame = frame
+                break
+        
+        mc.currentTime(nextFrame, e=True)
+
+    def GoToPrevGhost(self):
+        pass
+
+    def GetGhostFramesSorted(self):
+        ghosts = mc.listRelatives(self.GetGhostGrpName(), c=True)
+        frames = set() 
+        for ghost in ghosts:
+            frame = mc.getAttr(ghost + "." + self.GetFrameAttr())
+            frames.add(frame)
+
+        frames = list(frames)
+        frames.sort()
+        return frames
+
     def AddGhost(self):
         for srcMesh in self.srcMeshs:
             ghostName = srcMesh + "_ghost_" + str(GetCurrentFrame())
@@ -23,7 +48,13 @@ class Ghost():
                 mc.delete(ghostName)
 
             mc.duplicate(srcMesh, n = ghostName)
+            mc.addAttr(ghostName, ln = self.GetFrameAttr(), dv = GetCurrentFrame())
             mc.parent(ghostName, self.GetGhostGrpName())
+
+    
+
+    def GetFrameAttr(self):
+        return "frame"
 
     def InitSrcMeshesWithSel(self):
         selection = mc.ls(sl=True)
@@ -49,11 +80,16 @@ class GhostWidget(QWidget):
         self.masterLayout.addLayout(layout)
 
         addGhostBtn = QPushButton("Add")
-        addGhostBtn.clicked.connect(self.AddGhostBtnClicked) 
+        addGhostBtn.clicked.connect(self.ghost.AddGhost) 
         layout.addWidget(addGhostBtn)
 
-    def AddGhostBtnClicked(self):
-        self.ghost.AddGhost()
+        prevBtn = QPushButton("<<<")
+        prevBtn.clicked.connect(self.ghost.GoToPrevGhost)
+        layout.addWidget(prevBtn)
+
+        nextBtn = QPushButton(">>>")
+        nextBtn.clicked.connect(self.ghost.GoToNextGhost)
+        layout.addWidget(nextBtn)
 
     def CreateMeshSelSection(self):
         self.SrcMeshList = QListWidget()
