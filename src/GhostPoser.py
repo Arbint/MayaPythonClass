@@ -1,5 +1,5 @@
 import maya.cmds as mc
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QListWidget
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget
 
 class Ghost():
     def __init__(self):
@@ -25,6 +25,8 @@ class GhostWidget(QWidget):
 
     def CreateMeshSelSection(self):
         self.SrcMeshList = QListWidget()
+        self.SrcMeshList.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.SrcMeshList.itemSelectionChanged.connect(self.SrcMeshListSelecionChanged)
         self.masterLayout.addWidget(self.SrcMeshList)
         setSrcMeshBtn = QPushButton("Set Selected as Source")
         setSrcMeshBtn.clicked.connect(self.SetSrcMeshBtnClicked)
@@ -35,7 +37,10 @@ class GhostWidget(QWidget):
         self.SrcMeshList.clear()
         self.SrcMeshList.addItems(self.ghost.srcMeshs)
 
-
+    def SrcMeshListSelecionChanged(self):
+        mc.select(cl=True)
+        for item in self.SrcMeshList.selectedItems():
+            mc.select(item.text(), add=True)
 
 ghostWidget = GhostWidget()
 ghostWidget.show()
