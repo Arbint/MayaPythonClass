@@ -87,11 +87,41 @@ class BuildProxy:
         jntVertsMap = self.GenerateJntVertsDict()
         
         segments = []
+        ctrls = []
         for jnt, verts in jntVertsMap.items():
             newSeg = self.CreateProxyModelForJntAndVerts(jnt, verts)
+            if newSeg is None:
+                continue
+
             newSkinCluster = mc.skinCluster(self.jnts, newSeg)[0]
             print(newSkinCluster)
             mc.copySkinWeights(ss=self.skin, ds=newSkinCluster, nm=True, sa="closestPoint", ia="closestJoint")
+            segments.append(newSeg)
+            ctrlLoc = "ac_" + jnt + "_proxy"
+            mc.spaceLocator(n = ctrlLoc)
+            ctrlLocGrp = ctrlLoc + "_grp"
+            mc.group(ctrlLoc, n = ctrlLocGrp)             
+            mc.matchTransform(ctrlLocGrp, jnt)
+
+            mc.addAttr(ctrlLoc, ln = "vis", min = 0, max = 1, dv = 1, k=True)
+            mc.connectAttr(ctrlLoc + ".vis", newSeg + ".v")
+            ctrls.append(ctrlLocGrp)
+
+        proxyTopGrp = self.model + "_proxy_grp"
+        mc.group(segments, n = proxyTopGrp)
+
+        ctrlTopGrp ="ac_" + self.model + "_proxy_grp"
+        mc.group(ctrls, n = ctrlTopGrp)
+
+        globalProxyCtrl = "ac_" + self.model + "_proxy_global"
+        mc.circle(n=globalProxyCtrl, r = 20, nr=(1,0,0))
+        mc.parent(proxyTopGrp, globalProxyCtrl)  
+        mc.parent(ctrlTopGrp, globalProxyCtrl)  
+        mc.setAttr(proxyTopGrp + ".inheritsTransform", 0)
+
+        mc.addAttr(globalProxyCtrl, ln = "vis", min = 0, max = 1, k=True, dv = 1)
+        mc.connectAttr(globalProxyCtrl + ".vis", proxyTopGrp + ".v")
+
 
     def CreateProxyModelForJntAndVerts(self, jnt, verts):
         if not verts:
@@ -118,9 +148,6 @@ class BuildProxy:
         mc.rename(dup, dupName)
         return dupName
     
-
-
-
     def GenerateJntVertsDict(self):
         dict = {}
         for jnt in self.jnts:
