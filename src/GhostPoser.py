@@ -8,11 +8,24 @@ class Ghost():
     def __init__(self):
         self.srcMeshs = set()
         self.InitGhostGrpIfNotExist()
+        self.InitSrcMeshFromGhostGrp()
+
+    def InitSrcMeshFromGhostGrp(self):
+        srcMeshAttr = mc.getAttr(self.GetGhostGrpName() + "." + self.GetSrcMeshAttr())
+        if not srcMeshAttr:
+            return
+        
+        meshes = srcMeshAttr.split(",")
+        self.srcMeshs = set(meshes)
 
     def InitGhostGrpIfNotExist(self):
         if not mc.objExists(self.GetGhostGrpName()):
             mc.createNode("transform", n = self.GetGhostGrpName())
-            
+            mc.addAttr(self.GetGhostGrpName(), ln = self.GetSrcMeshAttr(), dt = "string")
+
+    def GetSrcMeshAttr(self):
+        return "src"
+
     def GetGhostGrpName(self):
         return "Ghost_grp"
 
@@ -28,7 +41,17 @@ class Ghost():
         mc.currentTime(nextFrame, e=True)
 
     def GoToPrevGhost(self):
-        pass
+        currentFrame = GetCurrentFrame()
+        frames = self.GetGhostFramesSorted()
+        nextFrame = frames[-1]
+        
+        frames.reverse()
+        for frame in frames:
+            if frame < currentFrame:
+                nextFrame = frame
+                break
+
+        mc.currentTime(nextFrame, e=True)
 
     def GetGhostFramesSorted(self):
         ghosts = mc.listRelatives(self.GetGhostGrpName(), c=True)
@@ -64,7 +87,10 @@ class Ghost():
             for s in shapes:
                 if mc.objectType(s) == "mesh":
                     self.srcMeshs.add(sel)
-        
+
+        mc.setAttr(self.GetGhostGrpName() + "." + self.GetSrcMeshAttr(), ",".join(self.srcMeshs), typ="string")
+
+
 class GhostWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -99,6 +125,7 @@ class GhostWidget(QWidget):
         setSrcMeshBtn = QPushButton("Set Selected as Source")
         setSrcMeshBtn.clicked.connect(self.SetSrcMeshBtnClicked)
         self.masterLayout.addWidget(setSrcMeshBtn)
+        self.SrcMeshList.addItems(self.ghost.srcMeshs)
 
     def SetSrcMeshBtnClicked(self):
         self.ghost.InitSrcMeshesWithSel()
