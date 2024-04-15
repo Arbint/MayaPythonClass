@@ -1,9 +1,29 @@
 import maya.cmds as mc
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget
 
+def GetCurrentFrame():
+    return int(mc.currentTime(q=True))
+
 class Ghost():
     def __init__(self):
         self.srcMeshs = set()
+        self.InitGhostGrpIfNotExist()
+
+    def InitGhostGrpIfNotExist(self):
+        if not mc.objExists(self.GetGhostGrpName()):
+            mc.createNode("transform", n = self.GetGhostGrpName())
+            
+    def GetGhostGrpName(self):
+        return "Ghost_grp"
+
+    def AddGhost(self):
+        for srcMesh in self.srcMeshs:
+            ghostName = srcMesh + "_ghost_" + str(GetCurrentFrame())
+            if mc.objExists(ghostName):
+                mc.delete(ghostName)
+
+            mc.duplicate(srcMesh, n = ghostName)
+            mc.parent(ghostName, self.GetGhostGrpName())
 
     def InitSrcMeshesWithSel(self):
         selection = mc.ls(sl=True)
@@ -22,6 +42,18 @@ class GhostWidget(QWidget):
         self.masterLayout = QVBoxLayout()
         self.setLayout(self.masterLayout)
         self.CreateMeshSelSection()
+        self.CreateCtrlSection()
+
+    def CreateCtrlSection(self):
+        layout = QHBoxLayout()
+        self.masterLayout.addLayout(layout)
+
+        addGhostBtn = QPushButton("Add")
+        addGhostBtn.clicked.connect(self.AddGhostBtnClicked) 
+        layout.addWidget(addGhostBtn)
+
+    def AddGhostBtnClicked(self):
+        self.ghost.AddGhost()
 
     def CreateMeshSelSection(self):
         self.SrcMeshList = QListWidget()
