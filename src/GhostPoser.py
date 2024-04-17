@@ -1,6 +1,7 @@
 import maya.cmds as mc
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget
-
+from PySide2.QtCore import Signal
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget, QColorDialog
+from PySide2.QtGui import QColor, QPainter, QBrush
 def GetCurrentFrame():
     return int(mc.currentTime(q=True))
 
@@ -31,7 +32,7 @@ class Ghost():
         allGhost = mc.listRelatives(self.GetGhostGrpName(), c=True)
         if not allGhost:
             return
-            
+
         for ghost in allGhost:
             self.DeleteGhost(ghost)
 
@@ -135,6 +136,23 @@ class Ghost():
     def GetShaderNameForGhost(self, ghost):
         return ghost + "_mat"
 
+class ColorPicker(QWidget):
+    colorChanged = Signal(QColor)
+    def __init__(self, width = 80, height = 20):
+        super().__init__()
+        self.setFixedSize(width, height)
+        self.color = QColor(128, 128, 128)
+
+    def mousePressEvent(self, event):
+        color = QColorDialog().getColor(self.color)
+        self.color = color
+        self.colorChanged.emit(self.color)
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setBrush(QBrush(self.color))
+        painter.drawRect(0,0, self.width(), self.height())      
 
 class GhostWidget(QWidget):
     def __init__(self):
@@ -144,7 +162,19 @@ class GhostWidget(QWidget):
         self.masterLayout = QVBoxLayout()
         self.setLayout(self.masterLayout)
         self.CreateMeshSelSection()
+        self.CreateMatCtrlSection()
         self.CreateCtrlSection()
+
+    def CreateMatCtrlSection(self):
+        layout = QHBoxLayout()
+        self.masterLayout.addLayout(layout)
+        
+        self.ghostColorPicker = ColorPicker()
+        self.ghostColorPicker.colorChanged.connect(self.GhostColorPickerColorChanged)
+        layout.addWidget(self.ghostColorPicker)
+
+    def GhostColorPickerColorChanged(self, newColor:QColor):
+        print(f"new color is now: {newColor.red()}, {newColor.green()}, {newColor.blue()}")
 
     def CreateCtrlSection(self):
         layout = QHBoxLayout()
