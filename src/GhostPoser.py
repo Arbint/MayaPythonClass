@@ -1,7 +1,9 @@
 import maya.cmds as mc
-from PySide2.QtCore import Signal
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget, QColorDialog
+
+from PySide2.QtCore import Signal, Qt
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView, QPushButton, QLabel, QListWidget, QColorDialog, QSlider
 from PySide2.QtGui import QColor, QPainter, QBrush
+
 def GetCurrentFrame():
     return int(mc.currentTime(q=True))
 
@@ -10,11 +12,26 @@ class Ghost():
         self.srcMeshs = set()
         self.InitGhostGrpIfNotExist()
         self.InitSrcMeshFromGhostGrp()
+        self.ghostColor = [0,0,0]
+    
+    def UpdateTransparencyRange(self, newRange):
+        print(f"new transparent range is: {newRange}")        
+
+    def UpdateBaseTranparency(self, newTransparency):      
+        print(f"new transparent range is: {newTransparency}") 
 
     def DeleteSelectedGhost(self):
         for srcMesh in self.srcMeshs:
             ghostName = srcMesh + self.GetGhostSubfix() + str(GetCurrentFrame())
             self.DeleteGhost(ghostName)            
+
+    def UpdateGhostColors(self, r, g, b):
+        self.ghostColor[0] = r
+        self.ghostColor[1] = g
+        self.ghostColor[2] = b
+        allGhosts = mc.listRelatives(self.GetGhostGrpName(), c=True)
+        for ghost in allGhosts:
+            self.SetGhostColor(ghost, r, g, b)
 
     def DeleteGhost(self, ghostName):
         ghostSg = self.GetShaderEngineForGhost(ghostName)
@@ -27,6 +44,10 @@ class Ghost():
 
         if mc.objExists(ghostName):
             mc.delete(ghostName)
+
+    def SetGhostColor(self, ghost, r, g, b):
+        ghostMat = self.GetShaderNameForGhost(ghost)
+        mc.setAttr(ghostMat + ".color", r, g, b, type = "double3")
 
     def DeleteAllGhosts(self):
         allGhost = mc.listRelatives(self.GetGhostGrpName(), c=True)
@@ -103,6 +124,7 @@ class Ghost():
             mc.addAttr(ghostName, ln = self.GetFrameAttr(), dv = GetCurrentFrame())
             mc.parent(ghostName, self.GetGhostGrpName())
             self.CreateMaterialForGhost(ghostName)
+            self.SetGhostColor(ghostName, self.ghostColor[0], self.ghostColor[1], self.ghostColor[2])
 
     def GetFrameAttr(self):
         return "frame"
@@ -173,8 +195,33 @@ class GhostWidget(QWidget):
         self.ghostColorPicker.colorChanged.connect(self.GhostColorPickerColorChanged)
         layout.addWidget(self.ghostColorPicker)
 
+        transSlider = QSlider()
+        transSlider.setOrientation(Qt.Horizontal)
+        transSlider.setMinimum(0)
+        transSlider.setMaximum(100)
+        transSlider.valueChanged.connect(self.BaseTransparencyChanged)
+        layout.addWidget(transSlider)
+
+        visCtrlLayout = QHBoxLayout()
+        self.masterLayout.addLayout(visCtrlLayout)
+
+        rangeLabel = QLabel("Transparecy Range")
+        visCtrlLayout.addWidget(rangeLabel)
+        rangeSlider = QSlider()
+        rangeSlider.setOrientation(Qt.Horizontal)
+        rangeSlider.setMinimum(0)
+        rangeSlider.setMaximum(60)
+        rangeSlider.valueChanged.connect(self.TransparencyRangeChanged)
+        visCtrlLayout.addWidget(rangeSlider)
+
+    def BaseTransparencyChanged(self, value):
+        self.ghost.UpdateBaseTranparency(value/100)        
+
+    def TransparencyRangeChanged(self, value):
+        self.ghost.UpdateTransparencyRange(value)        
+
     def GhostColorPickerColorChanged(self, newColor:QColor):
-        print(f"new color is now: {newColor.red()}, {newColor.green()}, {newColor.blue()}")
+        self.ghost.UpdateGhostColors(newColor.redF(), newColor.greenF(), newColor.blueF())
 
     def CreateCtrlSection(self):
         layout = QHBoxLayout()
