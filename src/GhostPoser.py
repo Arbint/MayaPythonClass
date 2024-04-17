@@ -10,6 +10,31 @@ class Ghost():
         self.InitGhostGrpIfNotExist()
         self.InitSrcMeshFromGhostGrp()
 
+    def DeleteSelectedGhost(self):
+        for srcMesh in self.srcMeshs:
+            ghostName = srcMesh + self.GetGhostSubfix() + str(GetCurrentFrame())
+            self.DeleteGhost(ghostName)            
+
+    def DeleteGhost(self, ghostName):
+        ghostSg = self.GetShaderEngineForGhost(ghostName)
+        if mc.objExists(ghostSg):
+            mc.delete(ghostSg)
+
+        ghostMat = self.GetShaderNameForGhost(ghostName)
+        if mc.objExists(ghostMat):
+            mc.delete(ghostMat)
+
+        if mc.objExists(ghostName):
+            mc.delete(ghostName)
+
+    def DeleteAllGhosts(self):
+        allGhost = mc.listRelatives(self.GetGhostGrpName(), c=True)
+        if not allGhost:
+            return
+            
+        for ghost in allGhost:
+            self.DeleteGhost(ghost)
+
     def InitSrcMeshFromGhostGrp(self):
         srcMeshAttr = mc.getAttr(self.GetGhostGrpName() + "." + self.GetSrcMeshAttr())
         if not srcMeshAttr:
@@ -64,17 +89,19 @@ class Ghost():
         frames.sort()
         return frames
 
+    def GetGhostSubfix(self):
+        return "_ghost_"
+
     def AddGhost(self):
         for srcMesh in self.srcMeshs:
-            ghostName = srcMesh + "_ghost_" + str(GetCurrentFrame())
+            ghostName = srcMesh + self.GetGhostSubfix() + str(GetCurrentFrame())
             if mc.objExists(ghostName):
                 mc.delete(ghostName)
 
             mc.duplicate(srcMesh, n = ghostName)
             mc.addAttr(ghostName, ln = self.GetFrameAttr(), dv = GetCurrentFrame())
             mc.parent(ghostName, self.GetGhostGrpName())
-
-    
+            self.CreateMaterialForGhost(ghostName)
 
     def GetFrameAttr(self):
         return "frame"
@@ -89,6 +116,24 @@ class Ghost():
                     self.srcMeshs.add(sel)
 
         mc.setAttr(self.GetGhostGrpName() + "." + self.GetSrcMeshAttr(), ",".join(self.srcMeshs), typ="string")
+
+    def CreateMaterialForGhost(self, ghost):        
+        matName = self.GetShaderNameForGhost(ghost)
+        if not mc.objExists(matName):
+            mc.shadingNode("lambert", asShader = True, name = matName)
+        
+        setName = self.GetShaderEngineForGhost(ghost)
+        if not mc.objExists(setName):
+            mc.sets(name = setName, renderable = True, empty = True)
+
+        mc.connectAttr(matName + ".outColor", setName + ".surfaceShader", force = True)
+        mc.sets(ghost, edit=True, forceElement = setName)
+
+    def GetShaderEngineForGhost(self, ghost):
+        return ghost + "_sg"
+
+    def GetShaderNameForGhost(self, ghost):
+        return ghost + "_mat"
 
 
 class GhostWidget(QWidget):
@@ -116,6 +161,14 @@ class GhostWidget(QWidget):
         nextBtn = QPushButton(">>>")
         nextBtn.clicked.connect(self.ghost.GoToNextGhost)
         layout.addWidget(nextBtn)
+
+        delBtn = QPushButton("Del")
+        delBtn.clicked.connect(self.ghost.DeleteSelectedGhost)
+        layout.addWidget(delBtn)
+
+        delAllBtn = QPushButton("Del All")
+        delAllBtn.clicked.connect(self.ghost.DeleteAllGhosts)
+        layout.addWidget(delAllBtn)
 
     def CreateMeshSelSection(self):
         self.SrcMeshList = QListWidget()
