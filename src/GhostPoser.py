@@ -13,12 +13,39 @@ class Ghost():
         self.InitGhostGrpIfNotExist()
         self.InitSrcMeshFromGhostGrp()
         self.ghostColor = [0,0,0]
-    
+        self.baseTransparency = 0
+        self.transparencyRange = 60
+        self.timeJob = mc.scriptJob(e=["timeChanged",self.CurrentTimeChanged])
+
+    def CurrentTimeChanged(self):
+        self.UpdateGhostTransparency()
+
     def UpdateTransparencyRange(self, newRange):
-        print(f"new transparent range is: {newRange}")        
+        self.transparencyRange = newRange 
+        self.UpdateGhostTransparency()
 
     def UpdateBaseTranparency(self, newTransparency):      
-        print(f"new transparent range is: {newTransparency}") 
+        self.baseTransparency = newTransparency
+        self.UpdateGhostTransparency()
+
+    def UpdateGhostTransparency(self):
+        allGhosts = mc.listRelatives(self.GetGhostGrpName(), c=True)
+        if not allGhosts:
+            return
+
+        for ghost in allGhosts:
+            ghostFrame = mc.getAttr(ghost + "."+self.GetFrameAttr())
+            currentFrame = GetCurrentFrame()
+            distance = abs(currentFrame - ghostFrame)
+            
+            ghostMat = self.GetShaderNameForGhost(ghost)
+        
+            if distance > self.transparencyRange:
+                mc.setAttr(ghostMat + ".transparency", 1,1,1, type = "double3")
+                continue
+
+            normalizeDist = distance / self.transparencyRange
+            mc.setAttr(ghostMat + ".transparency", normalizeDist, normalizeDist, normalizeDist, type = "double3")
 
     def DeleteSelectedGhost(self):
         for srcMesh in self.srcMeshs:
