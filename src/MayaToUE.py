@@ -4,7 +4,27 @@ from PySide2.QtWidgets import QLineEdit, QWidget, QPushButton, QListWidget, QAbs
 class MayaToUE:
     def __init__(self):
         self.rootJnt = ""
-        self.models = []
+        self.models = set()
+    
+    def AddSelectedMeshes(self):
+        selection = mc.ls(sl=True)
+        if not selection:
+            return False, "No Mesh Selected"
+        
+        meshes = set()
+        
+        for sel in selection:
+            shapes = mc.listRelatives(sel, s=True)
+            for s in shapes:
+                if mc.objectType(s) == "mesh":
+                    meshes.add(sel)
+
+        if len(meshes) == 0:
+            return False, "No Mesh Selected"
+        
+        self.models = meshes
+        return True, ""
+
 
     def AddRootJnt(self):
         if not self.rootJnt:
@@ -50,6 +70,21 @@ class MayaToUEWidget(QWidget):
         addRootJntBtn = QPushButton("Add Root Joint")
         addRootJntBtn.clicked.connect(self.AddRootJntBtnClicked)
         self.masterLayout.addWidget(addRootJntBtn)
+
+        self.meshList = QListWidget()
+        self.masterLayout.addWidget(self.meshList)
+        addMeshBtn = QPushButton("Add Meshes")
+        addMeshBtn.clicked.connect(self.AddMeshBtnClicked)
+        self.masterLayout.addWidget(addMeshBtn)
+
+
+    def AddMeshBtnClicked(self):
+        success, msg = self.mayaToUE.AddSelectedMeshes()
+        if not success:
+            QMessageBox.warning(self, "Warning", msg)
+        else:
+            self.meshList.clear()
+            self.meshList.addItems(self.mayaToUE.models)
 
     def AddRootJntBtnClicked(self):
         success, msg = self.mayaToUE.AddRootJnt()
