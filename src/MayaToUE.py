@@ -1,5 +1,12 @@
 import maya.cmds as mc
-from PySide2.QtWidgets import QLineEdit, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide2.QtWidgets import QCheckBox, QLineEdit, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
+
+class AnimEntry:
+    def __init__(self):
+        self.subfix = ""
+        self.frameMin = mc.playbackOptions(q=True, min=True)
+        self.frameMax = mc.playbackOptions(q=True, max=True)
+        self.shouldExport = True
 
 class MayaToUE:
     def __init__(self):
@@ -51,6 +58,61 @@ class MayaToUE:
         self.rootJnt = selection[0]
         return True, ""
     
+class AnimEntryWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.masterLayout = QHBoxLayout()
+        self.setLayout(self.masterLayout)
+
+        enableCheckbox = QCheckBox()
+        self.masterLayout.addWidget(enableCheckbox)
+        enableCheckbox.toggled.connect(self.EnableCheckboxToggled)
+
+        subfixLabel = QLabel("Subfix: ")
+        self.masterLayout.addWidget(subfixLabel)
+        subfixLineEdit = QLineEdit()
+        subfixLineEdit.textChanged.connect(self.SubfixTextChanged)
+        self.masterLayout.addWidget(subfixLineEdit)
+
+        minFrameLabel = QLabel("Min: ")
+        self.masterLayout.addWidget(minFrameLabel)
+        minFrameLineEdit = QLineEdit()
+        minFrameLineEdit.textChanged.connect(self.MinFrameChanged)
+        self.masterLayout.addWidget(minFrameLineEdit)
+
+        maxFrameLabel = QLabel("Max: ")
+        self.masterLayout.addWidget(maxFrameLabel)
+        maxFrameLineEdit = QLineEdit()
+        maxFrameLineEdit.textChanged.connect(self.MaxFrameChanged)
+        self.masterLayout.addWidget(maxFrameLineEdit)
+
+        setRangeBtn = QPushButton("[-]")
+        setRangeBtn.clicked.connect(self.SetRangeBtnClicked) 
+        self.masterLayout.addWidget(setRangeBtn)
+
+        DeleteBtn = QPushButton("X")
+        DeleteBtn.clicked.connect(self.DeleteBtnClicked) 
+        self.masterLayout.addWidget(DeleteBtn)
+    
+    def DeleteBtnClicked(self):
+        pass
+
+    def SetRangeBtnClicked(self):
+        pass
+
+    def MaxFrameChanged(self):
+        pass
+
+    def MinFrameChanged(self):
+        pass
+
+    def SubfixTextChanged(self):
+        pass
+
+    def EnableCheckboxToggled(self):
+        pass
+
+    
 
 class MayaToUEWidget(QWidget):
     def __init__(self):
@@ -77,6 +139,8 @@ class MayaToUEWidget(QWidget):
         addMeshBtn.clicked.connect(self.AddMeshBtnClicked)
         self.masterLayout.addWidget(addMeshBtn)
 
+        testAnimEntry = AnimEntryWidget()
+        self.masterLayout.addWidget(testAnimEntry)
 
     def AddMeshBtnClicked(self):
         success, msg = self.mayaToUE.AddSelectedMeshes()
