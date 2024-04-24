@@ -4,7 +4,7 @@ from PySide2.QtGui import QIntValidator, QRegExpValidator
 import maya.cmds as mc
 from PySide2.QtWidgets import QCheckBox, QFileDialog, QLineEdit, QSizePolicy, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
 
-class AnimEntry:
+class AnimClip:
     def __init__(self):
         self.subfix = ""
         self.frameMin = mc.playbackOptions(q=True, min=True)
@@ -18,6 +18,13 @@ class MayaToUE:
         self.animations = []
         self.fileName = ""
         self.saveDir = ""
+
+    def GetSavePathForAnimClip(self, animClip: AnimClip):
+        path = os.path.join(self.saveDir, self.GetAnimFolderName(), self.fileName + animClip.subfix + ".fbx")
+        return os.path.normpath(path)
+
+    def GetAnimFolderName(self):
+        return "anim"
 
     def GetSkeletalMeshSavePath(self):
         path = os.path.join(self.saveDir, self.fileName + ".fbx")
@@ -35,7 +42,7 @@ class MayaToUE:
         self.animations.remove(entryToRemove)
 
     def AddNewAnimEntry(self):
-        self.animations.append(AnimEntry())
+        self.animations.append(AnimClip())
         return self.animations[-1]
     
     def AddSelectedMeshes(self):
@@ -84,8 +91,9 @@ class MayaToUE:
         return True, ""
     
 class AnimEntryWidget(QWidget):
-    entryRemoved = Signal(AnimEntry)
-    def __init__(self, entry:AnimEntry):
+    entryRemoved = Signal(AnimClip)
+    entrySubfixChanged = Signal(str)
+    def __init__(self, entry:AnimClip):
         super().__init__()
         self.entry = entry
         self.masterLayout = QHBoxLayout()
@@ -145,6 +153,7 @@ class AnimEntryWidget(QWidget):
 
     def SubfixTextChanged(self, newVal):
         self.entry.subfix = newVal 
+        self.entrySubfixChanged.emit(newVal)
 
     def EnableCheckboxToggled(self):
         self.entry.shouldExport = not self.entry.shouldExport
@@ -217,6 +226,11 @@ class MayaToUEWidget(QWidget):
 
     def UpdateSavePrieviewLabel(self):
         preivewText = self.mayaToUE.GetSkeletalMeshSavePath()
+        if self.mayaToUE.animations:
+            for anim in self.mayaToUE.animations:
+                animSavePath = self.mayaToUE.GetSavePathForAnimClip(anim)
+                preivewText += "\n" + animSavePath
+
         self.savePreviewLabel.setText(preivewText)
 
     def FileNameLineEditChanged(self, newVal):
@@ -227,6 +241,7 @@ class MayaToUEWidget(QWidget):
         newEntry = self.mayaToUE.AddNewAnimEntry()
         newAnimEntryWidget = AnimEntryWidget(newEntry)
         newAnimEntryWidget.entryRemoved.connect(self.EntryRemoved)
+        newAnimEntryWidget.entrySubfixChanged.connect(self.UpdateSavePrieviewLabel)
         self.animEntryLayout.addWidget(newAnimEntryWidget)
 
     def EntryRemoved(self, entry):
