@@ -1,7 +1,8 @@
+import os
 from PySide2.QtCore import QRegExp, Signal
 from PySide2.QtGui import QIntValidator, QRegExpValidator
 import maya.cmds as mc
-from PySide2.QtWidgets import QCheckBox, QLineEdit, QSizePolicy, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide2.QtWidgets import QCheckBox, QFileDialog, QLineEdit, QSizePolicy, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
 
 class AnimEntry:
     def __init__(self):
@@ -17,6 +18,15 @@ class MayaToUE:
         self.animations = []
         self.fileName = ""
         self.saveDir = ""
+
+    def GetSkeletalMeshSavePath(self):
+        path = os.path.join(self.saveDir, self.fileName + ".fbx")
+        #in windows, the file path is c:\window\system32\
+        #in mac os or linux, the file path: ~/dev/myPrj
+        return os.path.normpath(path) # this converts your path to be the correct format for the os you are using 
+
+    def SetSaveDirectory(self, newDir):
+        self.saveDir = newDir
 
     def SetFileName(self, newFileName):
         self.fileName = newFileName
@@ -181,18 +191,37 @@ class MayaToUEWidget(QWidget):
         fileNameLabel = QLabel("File Name: ")
         self.saveFileLayout.addWidget(fileNameLabel)
         self.fileNameLineEdit = QLineEdit()
+        self.fileNameLineEdit.setFixedWidth(80)
         self.fileNameLineEdit.setValidator(QRegExpValidator(QRegExp("\w+")))
         self.fileNameLineEdit.textChanged.connect(self.FileNameLineEditChanged)
         self.saveFileLayout.addWidget(self.fileNameLineEdit)
 
         #Add a common file director widget here
+        self.directoryLabel = QLabel("Save Directory: ")
+        self.saveFileLayout.addWidget(self.directoryLabel)
         self.saveDirLineEdit = QLineEdit()
+        self.saveDirLineEdit.setEnabled(False)
         self.saveFileLayout.addWidget(self.saveDirLineEdit)
         self.pickDirBtn = QPushButton("...")
+        self.pickDirBtn.clicked.connect(self.PickFileDir)
         self.saveFileLayout.addWidget(self.pickDirBtn)
+        
+        self.savePreviewLabel = QLabel("")
+        self.masterLayout.addWidget(self.savePreviewLabel)
+
+    def PickFileDir(self):
+        path = QFileDialog().getExistingDirectory()
+        self.saveDirLineEdit.setText(path)
+        self.mayaToUE.SetSaveDirectory(path)
+        self.UpdateSavePrieviewLabel()
+
+    def UpdateSavePrieviewLabel(self):
+        preivewText = self.mayaToUE.GetSkeletalMeshSavePath()
+        self.savePreviewLabel.setText(preivewText)
 
     def FileNameLineEditChanged(self, newVal):
         self.mayaToUE.SetFileName(newVal)
+        self.UpdateSavePrieviewLabel()
 
     def AddNewAnimEntryBtnClicked(self):
         newEntry = self.mayaToUE.AddNewAnimEntry()
