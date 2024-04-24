@@ -1,5 +1,7 @@
+from PySide2.QtCore import QRegExp, Signal
+from PySide2.QtGui import QIntValidator, QRegExpValidator
 import maya.cmds as mc
-from PySide2.QtWidgets import QCheckBox, QLineEdit, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide2.QtWidgets import QCheckBox, QLineEdit, QSizePolicy, QWidget, QPushButton, QListWidget, QAbstractItemView, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox
 
 class AnimEntry:
     def __init__(self):
@@ -13,6 +15,14 @@ class MayaToUE:
         self.rootJnt = ""
         self.models = set()
         self.animations = []
+        self.fileName = ""
+        self.saveDir = ""
+
+    def SetFileName(self, newFileName):
+        self.fileName = newFileName
+
+    def RemoveEntry(self, entryToRemove):
+        self.animations.remove(entryToRemove)
 
     def AddNewAnimEntry(self):
         self.animations.append(AnimEntry())
@@ -64,6 +74,7 @@ class MayaToUE:
         return True, ""
     
 class AnimEntryWidget(QWidget):
+    entryRemoved = Signal(AnimEntry)
     def __init__(self, entry:AnimEntry):
         super().__init__()
         self.entry = entry
@@ -78,6 +89,7 @@ class AnimEntryWidget(QWidget):
         subfixLabel = QLabel("Subfix: ")
         self.masterLayout.addWidget(subfixLabel)
         subfixLineEdit = QLineEdit()
+        subfixLineEdit.setValidator(QRegExpValidator(QRegExp('\w+')))
         subfixLineEdit.setText(self.entry.subfix)
         subfixLineEdit.textChanged.connect(self.SubfixTextChanged)
         self.masterLayout.addWidget(subfixLineEdit)
@@ -85,14 +97,16 @@ class AnimEntryWidget(QWidget):
         minFrameLabel = QLabel("Min: ")
         self.masterLayout.addWidget(minFrameLabel)
         minFrameLineEdit = QLineEdit()
-        minFrameLineEdit.setText(str(self.entry.frameMin))
+        minFrameLineEdit.setValidator(QIntValidator())
+        minFrameLineEdit.setText(str(int(self.entry.frameMin)))
         minFrameLineEdit.textChanged.connect(self.MinFrameChanged)
         self.masterLayout.addWidget(minFrameLineEdit)
 
         maxFrameLabel = QLabel("Max: ")
         self.masterLayout.addWidget(maxFrameLabel)
         maxFrameLineEdit = QLineEdit()
-        maxFrameLineEdit.setText(str(self.entry.frameMax))
+        maxFrameLineEdit.setValidator(QIntValidator())
+        maxFrameLineEdit.setText(str(int(self.entry.frameMax)))
         maxFrameLineEdit.textChanged.connect(self.MaxFrameChanged)
         self.masterLayout.addWidget(maxFrameLineEdit)
 
@@ -105,11 +119,14 @@ class AnimEntryWidget(QWidget):
         self.masterLayout.addWidget(DeleteBtn)
     
     def DeleteBtnClicked(self):
+        self.close()
+        self.entryRemoved.emit(self.entry)
         self.deleteLater()
 
     def SetRangeBtnClicked(self):
-        pass
-
+        mc.playbackOptions(e=True, min = self.entry.frameMin, max = self.entry.frameMax)
+        mc.playbackOptions(e=True, ast = self.entry.frameMin, aet = self.entry.frameMax)
+        
     def MaxFrameChanged(self, newVal):
         self.entry.frameMax = int(newVal) 
 
@@ -121,8 +138,6 @@ class AnimEntryWidget(QWidget):
 
     def EnableCheckboxToggled(self):
         self.entry.shouldExport = not self.entry.shouldExport
-
-    
 
 class MayaToUEWidget(QWidget):
     def __init__(self):
@@ -145,6 +160,7 @@ class MayaToUEWidget(QWidget):
 
         self.meshList = QListWidget()
         self.masterLayout.addWidget(self.meshList)
+        self.meshList.setFixedHeight(80)
         addMeshBtn = QPushButton("Add Meshes")
         addMeshBtn.clicked.connect(self.AddMeshBtnClicked)
         self.masterLayout.addWidget(addMeshBtn)
@@ -153,10 +169,40 @@ class MayaToUEWidget(QWidget):
         addNewAnimEntryBtn.clicked.connect(self.AddNewAnimEntryBtnClicked)
         self.masterLayout.addWidget(addNewAnimEntryBtn)
 
+        self.animEntryLayout = QVBoxLayout()
+        self.masterLayout.addLayout(self.animEntryLayout)
+
+        self.setFixedWidth(500)
+        self.resize(self.minimumSizeHint())
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+
+        self.saveFileLayout = QHBoxLayout()
+        self.masterLayout.addLayout(self.saveFileLayout)
+        fileNameLabel = QLabel("File Name: ")
+        self.saveFileLayout.addWidget(fileNameLabel)
+        self.fileNameLineEdit = QLineEdit()
+        self.fileNameLineEdit.setValidator(QRegExpValidator(QRegExp("\w+")))
+        self.fileNameLineEdit.textChanged.connect(self.FileNameLineEditChanged)
+        self.saveFileLayout.addWidget(self.fileNameLineEdit)
+
+        #Add a common file director widget here
+        self.saveDirLineEdit = QLineEdit()
+        self.saveFileLayout.addWidget(self.saveDirLineEdit)
+        self.pickDirBtn = QPushButton("...")
+        self.saveFileLayout.addWidget(self.pickDirBtn)
+
+    def FileNameLineEditChanged(self, newVal):
+        self.mayaToUE.SetFileName(newVal)
+
     def AddNewAnimEntryBtnClicked(self):
         newEntry = self.mayaToUE.AddNewAnimEntry()
         newAnimEntryWidget = AnimEntryWidget(newEntry)
-        self.masterLayout.addWidget(newAnimEntryWidget)
+        newAnimEntryWidget.entryRemoved.connect(self.EntryRemoved)
+        self.animEntryLayout.addWidget(newAnimEntryWidget)
+
+    def EntryRemoved(self, entry):
+        self.resize(self.minimumSizeHint())
+        self.mayaToUE.RemoveEntry(entry)
 
     def AddMeshBtnClicked(self):
         success, msg = self.mayaToUE.AddSelectedMeshes()
