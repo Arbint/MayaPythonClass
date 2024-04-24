@@ -19,6 +19,32 @@ class MayaToUE:
         self.fileName = ""
         self.saveDir = ""
 
+    def GetAllJoints(self):
+        #ad means all decendence, c mean children
+        jnts = []
+        jnts.append(self.rootJnt) 
+        children = mc.listRelatives(self.rootJnt, c=True, ad=True, type="joint")
+        if children:
+            jnts.extend(children)
+        
+        return jnts
+
+    def SaveFiles(self):
+        allJnt = self.GetAllJoints()
+        allMeshes = self.models
+
+        allObjToExport = allJnt + list(allMeshes)
+        mc.select(allObjToExport, r=True)
+        skeletalMeshExportPath = self.GetSkeletalMeshSavePath()
+
+        mc.FBXResetExport()
+        mc.FBXExportSmoothingGroups('-v', True)
+        mc.FBXExportInputConnections('-v', False)
+
+        # -f means the file name, s means export selected, ea means export animation. 
+        mc.FBXExport('-f', skeletalMeshExportPath, '-s', True, '-ea', False)
+
+
     def GetSavePathForAnimClip(self, animClip: AnimClip):
         path = os.path.join(self.saveDir, self.GetAnimFolderName(), self.fileName + animClip.subfix + ".fbx")
         return os.path.normpath(path)
@@ -217,6 +243,10 @@ class MayaToUEWidget(QWidget):
         
         self.savePreviewLabel = QLabel("")
         self.masterLayout.addWidget(self.savePreviewLabel)
+
+        saveFilesBtn = QPushButton("Save")
+        saveFilesBtn.clicked.connect(self.mayaToUE.SaveFiles)
+        self.masterLayout.addWidget(saveFilesBtn)
 
     def PickFileDir(self):
         path = QFileDialog().getExistingDirectory()
